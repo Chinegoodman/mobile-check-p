@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手机号码查重工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .group {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        h2 {
+            color: #2c3e50;
+            font-size: 1.3rem;
+            margin-top: 0;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+        }
+        h3 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 16px; /* 防止iOS缩放 */
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button:hover, button:active {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+        button.clear {
+            background-color: #e74c3c;
+        }
+        button.clear:hover, button.clear:active {
+            background-color: #c0392b;
+        }
+        button.find {
+            background-color: #3498db;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        button.find:hover, button.find:active {
+            background-color: #2980b9;
+        }
+        button.clear-cache {
+            background-color: #9b59b6;
+            margin-top: 10px;
+        }
+        button.clear-cache:hover, button.clear-cache:active {
+            background-color: #8e44ad;
+        }
+        .cache-info {
+            text-align: center;
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        .phone-list-container {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .phone-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 15px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .phone-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 8px;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .phone-item::before {
+            content: attr(data-index);
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .result {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+        .count {
+            margin: 10px 0;
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.1rem;
+        }
+        .duplicate-item {
+            background-color: #f1c40f;
+            padding: 5px 10px 5px 35px;
+            border-radius: 5px;
+            color: #000;
+        }
+        .duplicate-item::before {
+            background-color: #e67e22;
+            left: 5px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 5px;
+        }
+        .pagination button {
+            flex: none;
+            padding: 5px 10px;
+            background-color: #3498db;
+            min-width: 40px;
+        }
+        .pagination button.active {
+            background-color: #2c3e50;
+        }
+        .pagination button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 移动端适配 */
+        @media (min-width: 768px) {
+            body {
+                max-width: 800px;
+                padding: 20px;
+            }
+            .container {
+                flex-direction: row;
+            }
+            .group {
+                flex: 1;
+            }
+            textarea {
+                height: 200px;
+            }
+        }
+        
+        /* 小屏幕单列显示 */
+        @media (max-width: 480px) {
+            .phone-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>手机号码查重工具</h1>
+    
+    <div class="container">
+        <div class="group">
+            <h2>第一组手机号码</h2>
+            <textarea id="group1" placeholder="请输入手机号码，每行一个" oninput="saveTextareaContent(1)"></textarea>
+            <div class="btn-group">
+                <button onclick="addPhoneNumber(1)">添加号码</button>
+                <button onclick="clearGroup(1)" class="clear">清空</button>
+            </div>
+            <div id="error1" class="error"></div>
+            <div class="count">总数：<span id="count1">0</span></div>
+            <h3>已添加号码：</h3>
+            <div class="phone-list-container">
+                <ul id="phoneList1" class="phone-list"></ul>
+            </div>
+            <div class="pagination" id="pagination1"></div>
+        </div>
+        
+        <div class="group">
+            <h2>第二组手机号码</h2>
+            <textarea id="group2" placeholder="请输入手机号码，每行一个" oninput="saveTextareaContent(2)"></textarea>
+            <div class="btn-group">
+                <button onclick="addPhoneNumber(2)">添加号码</button>
+                <button onclick="clearGroup(2)" class="clear">清空</button>
+            </div>
+            <div id="error2" class="error"></div>
+            <div class="count">总数：<span id="count2">0</span></div>
+            <h3>已添加号码：</h3>
+            <div class="phone-list-container">
+                <ul id="phoneList2" class="phone-list"></ul>
+            </div>
+            <div class="pagination" id="pagination2"></div>
+        </div>
+    </div>
+    
+    <button onclick="findDuplicates()" class="find">查找重复号码</button>
+    
+    <div class="result" id="result">
+        <h2>查重结果</h2>
+        <p id="resultText">请先添加手机号码并点击"查找重复号码"按钮</p>
+        <div class="phone-list-container">
+            <ul id="duplicateList" class="phone-list"></ul>
+        </div>
+    </div>
+    
+    <button onclick="clearAllCache()" class="clear-cache">清空所有缓存数据</button>
+    <div class="cache-info">数据已自动保存在本地，下次访问将自动加载</div>
+    
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // 存储两组手机号码
+        const phoneGroups = {
+            1: new Set(),
+            2: new Set()
+        };
+        
+        // 分页设置
+        const pageSettings = {
+            1: { currentPage: 1, itemsPerPage: 20 },
+            2: { currentPage: 1, itemsPerPage: 20 }
+        };
+        
+        // 页面加载时从本地存储加载数据
+        window.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+        });
+        
+        // 保存文本框内容
+        function saveTextareaContent(groupId) {
+            const textarea = document.getElementById(`group${groupId}`);
+            localStorage.setItem(`textareaContent${groupId}`, textarea.value);
+        }
+        
+        // 从本地存储加载数据
+        function loadFromLocalStorage() {
+            try {
+                // 加载文本框内容
+                for (let i = 1; i <= 2; i++) {
+                    const textareaContent = localStorage.getItem(`textareaContent${i}`);
+                    if (textareaContent) {
+                        document.getElementById(`group${i}`).value = textareaContent;
+                    }
+                }
+                
+                // 加载第一组号码
+                const group1Data = localStorage.getItem('phoneGroup1');
+                if (group1Data) {
+                    const numbers = JSON.parse(group1Data);
+                    for (const num of numbers) {
+                        phoneGroups[1].add(num);
+                    }
+                    updateCount(1);
+                    renderPhoneList(1);
+                }
+                
+                // 加载第二组号码
+                const group2Data = localStorage.getItem('phoneGroup2');
+                if (group2Data) {
+                    const numbers = JSON.parse(group2Data);
+                    for (const num of numbers) {
+                        phoneGroups[2].add(num);
+                    }
+                    updateCount(2);
+                    renderPhoneList(2);
+                }
+                
+                if (group1Data || group2Data) {
+                    showToast('已从本地加载缓存数据');
+                }
+            } catch (error) {
+                console.error('加载缓存数据失败:', error);
+            }
+        }
+        
+        // 保存到本地存储
+        function saveToLocalStorage(groupId) {
+            try {
+                const numbers = Array.from(phoneGroups[groupId]);
+                localStorage.setItem(`phoneGroup${groupId}`, JSON.stringify(numbers));
+            } catch (error) {
+                console.error('保存缓存数据失败:', error);
+                showToast('保存数据失败，可能是存储空间不足');
+            }
+        }
+        
+        // 清空所有缓存
+        function clearAllCache() {
+            localStorage.removeItem('phoneGroup1');
+            localStorage.removeItem('phoneGroup2');
+            localStorage.removeItem('textareaContent1');
+            localStorage.removeItem('textareaContent2');
+            
+            document.getElementById('group1').value = '';
+            document.getElementById('group2').value = '';
+            
+            clearGroup(1);
+            clearGroup(2);
+            showToast('已清空所有缓存数据');
+        }
+        
+        // 显示提示消息
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.opacity = 1;
+            
+            setTimeout(() => {
+                toast.style.opacity = 0;
+            }, duration);
+        }
+        
+        // 渲染分页按钮
+        function renderPagination(groupId) {
+            const paginationDiv = document.getElementById(`pagination${groupId}`);
+            paginationDiv.innerHTML = '';
+            
+            const totalItems = phoneGroups[groupId].size;
+            const { itemsPerPage, currentPage } = pageSettings[groupId];
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                return;
+            }
+            
+            // 上一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '上一页';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    pageSettings[groupId].currentPage--;
+                    renderPhoneList(groupId);
+                }
+            });
+            paginationDiv.appendChild(prevButton);
+            
+            // 页码按钮
+            const maxVisiblePages = 3; // 最多显示的页码数
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', () => {
+                    pageSettings[groupId].currentPage = i;
+                    renderPhoneList(groupId);
+                });
+                paginationDiv.appendChild(pageButton);
+            }
+            
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一页';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    pageSettings[groupId].currentPage++;
+                    renderPhoneList(groupId);
+                }
+            });
+            paginationDiv.appendChild(nextButton);
+        }
+        
+        // 渲染手机号码列表
+        function renderPhoneList(groupId) {
+            const phoneList = document.getElementById(`phoneList${groupId}`);
+            phoneList.innerHTML = '';
+            
+            const numbers = Array.from(phoneGroups[groupId]);
+            const { itemsPerPage, currentPage } = pageSettings[groupId];
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, numbers.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const li = document.createElement('li');
+                li.className = 'phone-item';
+                li.setAttribute('data-index', i + 1);
+                li.textContent = numbers[i];
+                phoneList.appendChild(li);
+            }
+            
+            renderPagination(groupId);
+        }
+        
+        // 更新计数
+        function updateCount(groupId) {
+            const countSpan = document.getElementById(`count${groupId}`);
+            countSpan.textContent = phoneGroups[groupId].size;
+        }
+        
+        // 添加手机号码
+        function addPhoneNumber(groupId) {
+            const textarea = document.getElementById(`group${groupId}`);
+            const errorDiv = document.getElementById(`error${groupId}`);
+            
+            // 获取输入的手机号码并按行分割
+            const input = textarea.value.trim();
+            if (!input) {
+                errorDiv.textContent = "请输入手机号码";
+                return;
+            }
+            
+            const numbers = input.split(/[\n,，\s]+/).filter(num => num.trim() !== '');
+            let hasError = false;
+            let duplicatesInInput = false;
+            
+            // 临时存储本次输入的号码，用于检查本次输入中的重复
+            const inputNumbers = new Set();
+            
+            for (const num of numbers) {
+                const trimmedNum = num.trim();
+                
+                // 验证手机号格式（中国大陆手机号为11位数字，以1开头）
+                if (!/^1\d{10}$/.test(trimmedNum)) {
+                    errorDiv.textContent = `无效的手机号码: ${trimmedNum}`;
+                    hasError = true;
+                    break;
+                }
+                
+                // 检查本次输入中是否有重复
+                if (inputNumbers.has(trimmedNum)) {
+                    duplicatesInInput = true;
+                    continue;
+                }
+                
+                // 检查是否与已有号码重复
+                if (phoneGroups[groupId].has(trimmedNum)) {
+                    duplicatesInInput = true;
+                    continue;
+                }
+                
+                inputNumbers.add(trimmedNum);
+            }
+            
+            if (hasError) {
+                return;
+            }
+            
+            if (duplicatesInInput) {
+                errorDiv.textContent = "已过滤重复的手机号码";
+                // 3秒后清除错误信息
+                setTimeout(() => {
+                    errorDiv.textContent = "";
+                }, 3000);
+            } else {
+                errorDiv.textContent = "";
+            }
+            
+            // 添加有效的手机号码
+            let hasNewNumbers = false;
+            for (const num of inputNumbers) {
+                if (!phoneGroups[groupId].has(num)) {
+                    phoneGroups[groupId].add(num);
+                    hasNewNumbers = true;
+                }
+            }
+            
+            if (hasNewNumbers) {
+                // 更新计数
+                updateCount(groupId);
+                
+                // 渲染手机号码列表
+                renderPhoneList(groupId);
+                
+                // 保存到本地存储
+                saveToLocalStorage(groupId);
+            }
+            
+            // 清空输入框
+            textarea.value = '';
+            localStorage.removeItem(`textareaContent${groupId}`);
+        }
+        
+        // 清空分组
+        function clearGroup(groupId) {
+            phoneGroups[groupId].clear();
+            document.getElementById(`phoneList${groupId}`).innerHTML = '';
+            document.getElementById(`pagination${groupId}`).innerHTML = '';
+            document.getElementById(`count${groupId}`).textContent = '0';
+            document.getElementById(`error${groupId}`).textContent = '';
+            
+            // 重置分页
+            pageSettings[groupId].currentPage = 1;
+            
+            // 清除本地存储
+            localStorage.removeItem(`phoneGroup${groupId}`);
+        }
+        
+        // 查找重复号码
+        function findDuplicates() {
+            const duplicateList = document.getElementById('duplicateList');
+            const resultText = document.getElementById('resultText');
+            
+            duplicateList.innerHTML = '';
+            
+            if (phoneGroups[1].size === 0 || phoneGroups[2].size === 0) {
+                resultText.textContent = "请确保两组都有手机号码";
+                return;
+            }
+            
+            // 查找重复号码
+            const duplicates = [];
+            for (const num of phoneGroups[1]) {
+                if (phoneGroups[2].has(num)) {
+                    duplicates.push(num);
+                }
+            }
+            
+            // 显示结果
+            if (duplicates.length === 0) {
+                resultText.textContent = "没有找到重复的手机号码";
+            } else {
+                resultText.textContent = `找到 ${duplicates.length} 个重复的手机号码：`;
+                
+                for (let i = 0; i < duplicates.length; i++) {
+                    const li = document.createElement('li');
+                    li.className = 'duplicate-item phone-item';
+                    li.setAttribute('data-index', i + 1);
+                    li.textContent = duplicates[i];
+                    duplicateList.appendChild(li);
+                }
+            }
+            
+            // 滚动到结果区域
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 添加键盘事件，支持回车键添加号码
+        document.getElementById('group1').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                addPhoneNumber(1);
+                e.preventDefault();
+            }
+        });
+        
+        document.getElementById('group2').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                addPhoneNumber(2);
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html> 
